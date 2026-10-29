@@ -1,0 +1,6 @@
+recoveriq.db
+*.db
+.env
+__pycache__/
+.venv/
+.pytest_cache/
