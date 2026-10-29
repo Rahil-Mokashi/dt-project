@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import icon, cmp %}
+{% block title %}Audit trail{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div><h1>Audit trail <span class="pill dark">{{ icon('lock', 14) }} Append-only</span></h1>
+    <p class="sub">Every detection, decision, compliance check, message and rupee recovered, with its reason</p></div>
+  <div class="head-tools">
+    <a class="btn btn-outline" href="{{ url_for('audit_csv', **qs) }}">{{ icon('download') }} Export CSV</a>
+    <a class="btn btn-primary" href="{{ url_for('audit_pdf', **qs) }}">{{ icon('file') }} Compliance report (PDF)</a>
+  </div>
+</header>
+<section class="kpis" aria-label="Summary">
+  <div class="card kpi"><span class="k-label">Cases logged</span><strong class="k-num mono">{{ s.cases }}</strong></div>
+  <div class="card kpi kpi-amber"><span class="k-label">Actions blocked</span><strong class="k-num mono">{{ s.blocked }}</strong></div>
+  <div class="card kpi"><span class="k-label">Hard stops</span><strong class="k-num mono">{{ s.hard_stops }}</strong></div>
+  <div class="card kpi"><span class="k-label">Contacts outside rules</span><strong class="k-num mono green">{{ s.outside }}</strong></div>
+  <div class="card kpi"><span class="k-label">Recovered</span><strong class="k-num mono">{{ s.recovered|inr }}</strong></div>
+</section>
+<section class="card">
+  <form class="filters" method="get" action="{{ url_for('audit_page') }}" data-autosubmit>
+    <label>From<input type="date" name="date_from" value="{{ f.date_from }}"></label>
+    <label>To<input type="date" name="date_to" value="{{ f.date_to }}"></label>
+    <label class="search">{{ icon('search', 16) }}<span class="sr">Customer or case</span><input type="search" name="q" value="{{ f.q }}" placeholder="Customer or case"></label>
+    <label><span class="sr">Event</span><select name="event"><option value="">All events</option>
+      {% for e in events %}<option {{ 'selected' if f.event == e }}>{{ e }}</option>{% endfor %}</select></label>
+    <label><span class="sr">Check result</span><select name="result">
+      <option value="">Passed and blocked</option><option value="pass" {{ 'selected' if f.result == 'pass' }}>Passed only</option>
+      <option value="blocked" {{ 'selected' if f.result == 'blocked' }}>Blocked only</option></select></label>
+    <button class="btn btn-outline" type="submit">Apply</button>
+  </form>
+  <div class="scroll">
+  <table class="mono audit">
+    <thead><tr><th>Entry</th><th>Time (IST)</th><th>Case</th><th>Event</th><th>Compliance</th><th>By</th><th>Reason / detail</th><th class="r">Amount</th></tr></thead>
+    <tbody>{% for e in rows %}
+      <tr class="{{ 'blocked' if e.result.startswith('FAIL') }}">
+        <td>{{ e.id }}</td><td>{{ e.ts[:16] }}</td><td>{{ e.case_id }}<div class="muted sm">{{ e.customer }}</div></td>
+        <td>{{ e.event }}</td><td>{{ cmp(e.result) }}</td><td>{{ e.actor }}</td><td class="detail">{{ e.detail }}</td>
+        <td class="r {{ 'green strong' if e.event == 'RECOVERED' }}">{{ e.amount|inr if e.amount is not none else '' }}</td>
+      </tr>{% else %}<tr><td colspan="8" class="center muted">No entries match.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="muted sm">{{ rows|length }} entries. Entries can't be edited or deleted. A correction is added as a new entry that points to the old one.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'paytrack_base.html' %}
+{% from '_macros.html' import icon %}
+{% block body %}
+<div class="stop-icon">{{ icon('bell-off', 28) }}</div>
+<p class="pt-hi">Hi {{ first }}</p>
+<h1>Reminders stopped. We won't contact you about this payment again.</h1>
+<section class="card">
+  <small class="k-label">YOU ASKED US TO STOP</small>
+  <p><strong>{% if c.consent_withdrawn_at %}{{ c.consent_withdrawn_at|dt }} 2026{% else %}Set by the StudyPro owner{% endif %}</strong> · by {{ 'replying STOP' if c.consent_withdrawn_at else 'owner request' }}</p>
+  <p class="mono">Confirmation {{ c.confirmation_id or 'n/a' }}</p>
+</section>
+<section class="card">
+  <h2>What this means</h2>
+  <ul class="checks">
+    <li>{{ icon('check', 16) }} No more WhatsApp, SMS or email reminders</li>
+    <li>{{ icon('check', 16) }} No more automatic attempts to charge {{ c.amount|inr }}</li>
+    <li>{{ icon('check', 16) }} Your {{ c.tier }} access ends on {{ c.access_until|dshort }}</li>
+  </ul>
+</section>
+<section class="card">
+  <ol class="track">
+    <li class="done" data-step="Payment failed"><span class="node grey"></span><div><strong>Payment failed</strong><p class="muted">{{ c.fail_at|dshort }}</p></div></li>
+    <li class="now" data-step="Stopped at your request" aria-current="step"><span class="node dark">{{ icon('x', 14) }}</span><div><strong>Stopped at your request</strong><p class="muted">This is final unless you restart it yourself</p></div></li>
+  </ol>
+</section>
+<p class="center">Changed your mind? You can still keep your plan. We won't nudge you about it.</p>
+<form method="post" action="{{ url_for('pt_keep', code=code) }}"><button class="btn btn-outline block" type="submit">Pay {{ c.amount|inr }} and keep {{ c.tier }}</button></form>
+<a class="btn btn-text block" href="{{ url_for('pt_confirmation', code=code) }}">Download confirmation</a>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import icon, chip %}
+{% block title %}Revenue at risk{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div><small class="eyebrow">October billing cycle</small><h1>Revenue at risk</h1></div>
+  <div class="head-tools">
+    <form class="clock" method="post" action="{{ url_for('set_clock') }}">
+      {{ icon('clock') }}<label for="clk">Demo clock</label>
+      <input id="clk" type="time" name="time" value="{{ clock }}" required>
+      <button class="btn btn-outline" type="submit">Set</button>
+      <span class="pill {{ 'ok' if in_hours else 'warn' }}">{{ 'Within 9 AM–8 PM' if in_hours else 'Outside contact hours' }}</span>
+    </form>
+    <form method="post" action="{{ url_for('run_cycle') }}"><button class="btn btn-primary" type="submit">{{ icon('play') }} Run recovery cycle</button></form>
+  </div>
+</header>
+
+<section class="kpis" aria-label="Key numbers">
+  <div class="card kpi"><span class="k-label">Failed payments</span><strong class="k-num mono">{{ s.failed }}</strong><span class="muted">cases this cycle</span></div>
+  <div class="card kpi"><span class="k-label">Revenue at risk</span><strong class="k-num mono">{{ s.at_risk|inr }}</strong><span class="muted">across open cases</span></div>
+  <div class="card kpi kpi-solid"><span class="k-label">Recovered <span class="live"><i></i>LIVE</span></span><strong class="k-num mono">{{ s.recovered|inr }}</strong>
+    <span>{% if s.latest %}Latest: +{{ s.latest.amount|inr }} · {{ s.latest.name }} · {{ s.latest.recovered_at|dt }}{% else %}Nothing recovered yet{% endif %}</span></div>
+  <div class="card kpi kpi-amber"><span class="k-label">Needs attention</span><strong class="k-num mono">{{ s.attention }}</strong><span>{{ s.escalated }} escalated · {{ s.awaiting }} awaiting approval</span></div>
+  <div class="card kpi"><span class="k-label">Blocked by compliance</span><strong class="k-num mono">{{ s.blocked_total }}</strong><span class="muted">{{ s.blocked_text or 'none' }}</span></div>
+</section>
+
+<section class="two">
+  <div class="card">
+    <h2>Why payments failed</h2><p class="muted sub-s">Rule-based failure classifier · {{ s.failed }} cases</p>
+    {% set top = s.reasons[0][1] %}
+    <ul class="bars">{% for name, n in s.reasons %}
+      <li><span>{{ name }}</span><div class="bar"><i style="width: {{ (n / top * 100)|round }}%"></i></div><b class="mono">{{ n }}</b></li>{% endfor %}
+    </ul>
+  </div>
+  <div class="card">
+    <h2>Where cases are in the workflow</h2><p class="muted sub-s mono">FAILED → ANALYSED → ACTION_TAKEN → outcome</p>
+    <div class="states">{% for st in ['FAILED','ANALYSED','ACTION_TAKEN','RECOVERED','ESCALATED','HARD_STOP'] %}
+      <div class="state-cell">{{ chip(st) }}<b class="mono">{{ s.states[st] }}</b></div>{% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="card" id="cases">
+  <div class="card-head"><h2>Payment cases</h2><span class="muted">{{ total }} shown</span></div>
+  <form class="filters" method="get" action="{{ url_for('dashboard') }}#cases" data-autosubmit>
+    <label class="search">{{ icon('search', 16) }}<span class="sr">Search name or case ID</span><input type="search" name="q" value="{{ args.q }}" placeholder="Search name or case ID"></label>
+    <label><span class="sr">Failure reason</span><select name="reason"><option value="">All failure reasons</option>
+      {% for k, v in reasons.items() %}<option value="{{ k }}" {{ 'selected' if args.reason == k }}>{{ v }}</option>{% endfor %}
+      <option value="NONE" {{ 'selected' if args.reason == 'NONE' }}>Not classified</option></select></label>
+    <label><span class="sr">Status</span><select name="status"><option value="">All statuses</option>
+      {% for k in states %}<option {{ 'selected' if args.status == k }}>{{ k }}</option>{% endfor %}</select></label>
+    <label><span class="sr">Tier</span><select name="tier"><option value="">All tiers</option>
+      {% for k in tiers %}<option {{ 'selected' if args.tier == k }}>{{ k }}</option>{% endfor %}</select></label>
+    <button class="btn btn-outline" type="submit">Apply</button>
+  </form>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Customer</th><th>Tier</th><th class="r">Amount</th><th>Failure reason</th><th>Contacts today</th><th>Retries</th><th>Status</th><th>Next step</th><th><span class="sr">Open</span></th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><strong>{{ r.name }}</strong><div class="mono muted sm">{{ r.id }} · {{ r.tenure|months }}</div></td>
+        <td>{{ r.tier }}</td>
+        <td class="r mono">{{ r.amount|inr }}</td>
+        <td><span class="chip grey">{{ r.failure_type|label }}</span></td>
+        <td class="mono {{ 'amber' if r.contacts >= 3 }}">{{ r.contacts }} / 3</td>
+        <td class="mono">{{ r.retries }} / 4</td>
+        <td>{{ chip(r.status) }}</td>
+        <td class="next">{{ r.next }}</td>
+        <td><a class="link" href="{{ url_for('case_page', cid=r.id) }}" aria-label="Open case {{ r.id }}">Open</a></td>
+      </tr>
+    {% else %}<tr><td colspan="9" class="muted center">No cases match these filters.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <nav class="pager" aria-label="Pages">
+    <span class="muted">Page {{ page }} of {{ pages }}</span>
+    <span>
+      {% if page > 1 %}<a class="btn btn-outline" href="{{ url_for('dashboard', page=page-1, **qs) }}#cases">Previous</a>{% endif %}
+      {% if page < pages %}<a class="btn btn-outline" href="{{ url_for('dashboard', page=page+1, **qs) }}#cases">Next</a>{% endif %}
+    </span>
+  </nav>
+</section>
+{% endblock %}

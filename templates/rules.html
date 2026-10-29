@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import icon %}
+{% block title %}Compliance rules{% endblock %}
+{% block content %}
+<header class="page-head"><div><small class="eyebrow">Read-only</small><h1>Compliance rules</h1>
+<p class="sub">The six-point gate runs before every outbound message and every retry. If a check fails the action is blocked and the reason is logged.</p></div></header>
+<section class="card">
+  <ol class="rules">
+  {% for k in checks %}
+    <li><span class="num mono">{{ loop.index }}</span><div><strong>{{ k.name }}</strong><p class="muted">{{ k.rule }}</p></div></li>
+  {% endfor %}
+  </ol>
+</section>
+<section class="card">
+  <h2>When a check fails</h2>
+  <ul class="plain">
+    <li>Outside contact hours: deferred to the next 9:00 AM</li>
+    <li>Contact cap or retry limit reached: case moves to ESCALATED</li>
+    <li>Hard-stop flag: case stays HARD_STOP, nothing is sent or retried</li>
+    <li>DND: no message, PayTrack status only</li>
+  </ul>
+  <p class="muted">Fraud holds are never auto-retried; they always go to a human.</p>
+</section>
+{% endblock %}

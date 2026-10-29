@@ -1,0 +1,20 @@
+{% from '_macros.html' import icon %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PayTrack · StudyPro</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="pt-body">
+<div class="pt">
+  <header class="pt-top"><strong>StudyPro</strong><span class="pt-brand">{{ icon('shield', 16) }} PayTrack</span></header>
+  {% with msgs = get_flashed_messages() %}{% if msgs %}<div class="flash" role="status">{% for m in msgs %}<p>{{ m }}</p>{% endfor %}</div>{% endif %}{% endwith %}
+  {% block body %}{% endblock %}
+  <p class="muted sm center">Demo mode · synthetic data. Payments and messages are simulated.</p>
+</div>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

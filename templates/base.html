@@ -1,0 +1,40 @@
+{% from '_macros.html' import icon %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}RecoverIQ Nexus{% endblock %} · RecoverIQ Nexus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect x="1.5" y="1.5" width="31" height="31" rx="9" fill="#24322C" stroke="#6FD0AE" stroke-width="1.5"/><path d="M10 17.5l5 5 9-10" fill="none" stroke="#6FD0AE" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><strong>RecoverIQ Nexus</strong><span>StudyPro workspace</span></div>
+    </div>
+    <nav aria-label="Main">
+      <a href="{{ url_for('dashboard') }}" {% if ep == 'dashboard' %}aria-current="page"{% endif %}>{{ icon('trend') }} Revenue risk</a>
+      <a href="{{ url_for('dashboard') }}#cases" {% if ep == 'case_page' %}aria-current="page"{% endif %}>{{ icon('cases') }} Recovery cases</a>
+      <a href="{{ url_for('audit_page') }}" {% if ep == 'audit_page' %}aria-current="page"{% endif %}>{{ icon('audit') }} Audit trail</a>
+      <a href="{{ url_for('rules') }}" {% if ep == 'rules' %}aria-current="page"{% endif %}>{{ icon('rules') }} Compliance rules</a>
+    </nav>
+    <div class="demo-box">
+      <strong>Demo mode</strong>
+      <p>Synthetic StudyPro data · 47 cases. Payments and messages are simulated.</p>
+      <form method="post" action="{{ url_for('reset') }}" data-confirm="Rebuild the demo database from the seed? All changes will be lost.">
+        <button class="btn btn-ghost" type="submit">{{ icon('reset', 16) }} Reset demo data</button>
+      </form>
+    </div>
+  </aside>
+  <main class="main">
+    {% with msgs = get_flashed_messages() %}{% if msgs %}<div class="flash" role="status">{% for m in msgs %}<p>{{ m }}</p>{% endfor %}</div>{% endif %}{% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

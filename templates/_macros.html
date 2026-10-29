@@ -1,0 +1,35 @@
+{% macro icon(name, size=18) -%}
+<svg class="ic" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+{%- if name == 'clock' %}<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+{%- elif name == 'check' %}<path d="M5 12.5l4.5 4.5L19 7.5"/>
+{%- elif name == 'x' %}<path d="M6 6l12 12M18 6L6 18"/>
+{%- elif name == 'lock' %}<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>
+{%- elif name == 'shield' %}<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/>
+{%- elif name == 'search' %}<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>
+{%- elif name == 'download' %}<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>
+{%- elif name == 'file' %}<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/>
+{%- elif name == 'trend' %}<path d="M4 17l5-5 4 4 7-8"/><path d="M15 8h5v5"/>
+{%- elif name == 'cases' %}<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16M9 10v9"/>
+{%- elif name == 'audit' %}<path d="M8 4h8M8 4a2 2 0 00-2 2v14h12V6a2 2 0 00-2-2M9 11h6M9 15h6"/>
+{%- elif name == 'rules' %}<path d="M12 3l8 4v5c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V7z"/><path d="M9 12l2 2 4-4"/>
+{%- elif name == 'send' %}<path d="M4 12l16-8-6 16-3-7z"/>
+{%- elif name == 'bell-off' %}<path d="M6 16v-5a6 6 0 019-5.2M18 11v5l2 2H4M10 21h4M4 4l16 16"/>
+{%- elif name == 'alert' %}<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>
+{%- elif name == 'reset' %}<path d="M4 12a8 8 0 108-8M4 4v5h5"/>
+{%- elif name == 'play' %}<path d="M8 5l11 7-11 7z"/>
+{%- elif name == 'edit' %}<path d="M4 20h4L19 9l-4-4L4 16z"/>
+{%- elif name == 'refresh' %}<path d="M20 12a8 8 0 01-14 5M4 12a8 8 0 0114-5M18 3v4h-4M6 21v-4h4"/>
+{%- elif name == 'eye' %}<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
+{%- elif name == 'phone' %}<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>
+{%- elif name == 'user-x' %}<circle cx="10" cy="8" r="3.5"/><path d="M3 20c0-3.5 3-6 7-6M16 14l5 5M21 14l-5 5"/>
+{%- endif %}</svg>
+{%- endmacro %}
+
+{% macro chip(state) -%}<span class="chip st-{{ state }}">{{ state }}</span>{%- endmacro %}
+
+{% macro cmp(res) -%}
+{%- if res.startswith('PASS') %}<span class="cr pass">{{ res }}</span>
+{%- elif res.startswith('FAIL') %}<span class="cr fail">{{ res }}</span>
+{%- elif res.startswith('FLAG') %}<span class="cr flag">{{ res }}</span>
+{%- else %}<span class="muted">{{ res }}</span>{% endif -%}
+{%- endmacro %}

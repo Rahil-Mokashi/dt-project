@@ -1,0 +1,56 @@
+{% extends 'paytrack_base.html' %}
+{% from '_macros.html' import icon %}
+{% block body %}
+<p class="pt-hi">Hi {{ first }}</p>
+{% if c.status == 'RECOVERED' %}<h1>Payment received. Thank you.</h1>
+{% elif c.status == 'ESCALATED' %}<h1>We're looking into this. Your access is safe.</h1>
+{% else %}<h1>Your renewal didn't go through. Your access is safe.</h1>{% endif %}
+
+<section class="card">
+  <div class="plan-row"><strong>{{ c.tier }} plan</strong><span class="mono">{{ c.amount|inr }}/month</span></div>
+  <div class="why"><small>WHY IT FAILED</small><p>{{ why }}</p></div>
+  <p class="access">{{ icon('clock', 18) }} Access continues until {{ c.access_until|dshort }}</p>
+</section>
+
+<section class="card">
+  <h2>What's happening</h2>
+  <ol class="track">
+  {% for name, sub in steps %}
+    {% set st = 'done' if loop.index0 < cur else 'now' if loop.index0 == cur else 'todo' %}
+    <li class="{{ st }}" data-step="{{ name }}" {% if st == 'now' %}aria-current="step"{% endif %}>
+      <span class="node">{% if st == 'done' %}{{ icon('check', 14) }}{% elif st == 'now' %}<i></i>{% endif %}</span>
+      <div><strong>{{ name }}</strong><p class="muted">{{ sub }}</p></div>
+    </li>
+  {% endfor %}
+  </ol>
+</section>
+
+{% if paused %}<p class="note">Reminders are paused until {{ c.pause_until|dshort }}.</p>{% endif %}
+{% if can_act %}
+<form method="post" action="{{ url_for('pt_pay', code=code) }}"><button class="btn btn-primary block" type="submit">Pay {{ c.amount|inr }} now</button></form>
+<details class="alt">
+  <summary class="btn btn-outline block">Use a different card or UPI</summary>
+  <form method="post" action="{{ url_for('pt_method', code=code) }}" class="stack">
+    <label>Card number or UPI ID<input name="method" placeholder="name@upi" autocomplete="off" required></label>
+    <button class="btn btn-primary block" type="submit">Save and retry (simulated)</button>
+  </form>
+</details>
+<form method="post" action="{{ url_for('pt_pause', code=code) }}"><button class="btn btn-text block" type="submit">Pause reminders for 7 days</button></form>
+{% endif %}
+
+<section class="card info">
+  <div><span>Messages so far</span><b class="mono">{{ sent }}</b></div>
+  <div><span>Most we'll send before {{ c.access_until|dshort }}</span><b class="mono">{{ more }} more</b></div>
+  <div><span>Contact hours</span><b class="mono">9 AM – 8 PM</b></div>
+</section>
+
+{% if c.status != 'RECOVERED' %}
+<details class="stop">
+  <summary class="link">Stop all reminders about this payment</summary>
+  <form method="post" action="{{ url_for('pt_stop', code=code) }}" class="stack">
+    <p>This is final. We won't message you or try to charge you about this payment again.</p>
+    <button class="btn btn-dark block" type="submit">Yes, stop all reminders</button>
+  </form>
+</details>
+{% endif %}
+{% endblock %}

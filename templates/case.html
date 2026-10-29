@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import icon, chip, cmp %}
+{% block title %}Case {{ c.id }}{% endblock %}
+{% block content %}
+<nav class="crumb" aria-label="Breadcrumb"><a href="{{ url_for('dashboard') }}">Revenue risk</a> / <span>Case {{ c.id }}</span></nav>
+<header class="page-head">
+  <div><h1>{{ c.name }} {{ chip(c.status) }}</h1>
+    <p class="sub">{{ c.tier }} · subscriber for {{ c.tenure|months }} · {{ c.amount|inr }} renewal failed on {{ c.fail_at|dshort }} 2026</p></div>
+  <div class="head-tools">
+    <form method="post" action="{{ url_for('escalate', cid=c.id) }}"><button class="btn btn-outline" type="submit" {{ 'disabled' if c.status in ('ESCALATED','RECOVERED','HARD_STOP') }}>Escalate to human</button></form>
+    <form method="post" action="{{ url_for('hardstop', cid=c.id) }}" data-confirm="Set a hard stop? No more messages or automatic retries, ever."><button class="btn btn-dark-outline" type="submit" {{ 'disabled' if c.status in ('RECOVERED','HARD_STOP') }}>Set hard stop</button></form>
+    <form method="post" action="{{ url_for('approve', cid=c.id) }}"><button class="btn btn-primary" type="submit" {{ '' if can_send else 'disabled' }}>{{ icon('send') }} Approve and send</button></form>
+  </div>
+</header>
+
+<ol class="flow" aria-label="Workflow">
+  {% for s in chain %}<li class="{{ s.state }}">{% if s.state == 'done' %}{{ icon('check', 14) }}{% elif s.state == 'now' %}<i class="dot"></i>{% endif %}<span class="mono">{{ s.name }}{% if s.state == 'now' %} · now{% endif %}</span></li>{% endfor %}
+</ol>
+
+<div class="cols">
+  <div class="col-main">
+    <section class="card">
+      <h2>Why it failed</h2>
+      {% if cls %}
+      <div class="tiles">
+        <div><span class="k-label">Failure type</span><strong>{{ c.failure_type|label }}</strong></div>
+        <div><span class="k-label">Decline class</span><strong>{{ cls.cls|capitalize }}</strong></div>
+        <div><span class="k-label">Gateway code</span><strong class="mono">{{ c.decline_code }}</strong></div>
+        <div><span class="k-label">Attempted</span><strong class="mono">{{ c.fail_at|dt }}</strong></div>
+      </div>
+      <p class="mono rule">Rule matched: {{ cls.rule }}</p>
+      {% else %}<p class="muted">Not classified yet. Use “Run recovery cycle” on the overview to run the classifier.</p>{% endif %}
+    </section>
+
+    {% if plan %}
+    <section class="card">
+      <div class="card-head"><h2>Recommended strategy</h2><span class="muted sm">AI strategy generator · Claude</span></div>
+      <p class="strategy">{{ plan.name }}</p><p class="muted">{{ plan.reason }}</p>
+      <dl class="plan">{% for label, text in plan.steps %}<div><dt class="mono">{{ label }}</dt><dd>{{ text }}</dd></div>{% endfor %}</dl>
+    </section>
+    {% endif %}
+
+    {% if c.message %}
+    <section class="card">
+      <div class="card-head"><h2>Message draft</h2><span class="pill">WhatsApp · English</span></div>
+      {% if editing and c.status == 'ANALYSED' %}
+      <form method="post" action="{{ url_for('edit', cid=c.id) }}">
+        <label class="sr" for="msg">Message</label><textarea id="msg" name="message" rows="7">{{ c.message }}</textarea>
+        <div class="row"><button class="btn btn-primary" type="submit">Save draft</button><a class="btn btn-outline" href="{{ url_for('case_page', cid=c.id) }}">Cancel</a></div>
+      </form>
+      {% else %}
+      <div class="chat"><div class="bubble">{{ c.message }}</div></div>
+      <p class="muted sm">{% if c.message_source == 'claude' %}Drafted by Claude from failure type + tier + tenure. Nothing is sent until you approve.
+        {% elif c.message_source == 'edited' %}Edited by the owner. Nothing is sent until you approve.
+        {% else %}Template message (no API key). Nothing is sent until you approve.{% endif %}</p>
+      <div class="row">
+        {% if c.status == 'ANALYSED' %}
+        <a class="btn btn-outline" href="{{ url_for('case_page', cid=c.id, edit=1) }}">{{ icon('edit', 16) }} Edit message</a>
+        <form method="post" action="{{ url_for('regenerate', cid=c.id) }}"><button class="btn btn-outline" type="submit">{{ icon('refresh', 16) }} Regenerate</button></form>
+        {% endif %}
+        <a class="btn btn-text" href="{{ url_for('paytrack', code=code) }}">{{ icon('eye', 16) }} Preview PayTrack page</a>
+      </div>
+      {% endif %}
+    </section>
+    {% else %}
+    <section class="card"><h2>Message draft</h2><p class="muted">{% if plan %}This strategy sends no message.{% else %}A message is drafted once the case is classified.{% endif %}</p>
+      <a class="btn btn-text" href="{{ url_for('paytrack', code=code) }}">{{ icon('eye', 16) }} Preview PayTrack page</a></section>
+    {% endif %}
+  </div>
+
+  <div class="col-side">
+    <section class="card">
+      <div class="card-head"><h2>Compliance gate</h2>
+        <span class="pill {{ 'ok' if gate.ok else 'warn' }}">{% if gate.ok %}6 / 6 PASS{% else %}{{ gate.passed }} / 6 — BLOCKED{% endif %}</span></div>
+      <ul class="gate">{% for k in gate.checks %}
+        <li class="{{ 'ok' if k.ok else 'bad' }}"><span class="gi">{{ icon('check' if k.ok else 'x', 16) }}</span>
+          <div><strong>{{ k.name }}</strong><div class="muted sm">{{ k.rule }}</div></div><span class="mono">{{ k.value }}</span></li>{% endfor %}
+      </ul>
+      <p class="muted sm mono">Checked {{ now.day }} {{ now.strftime('%b %Y, %I:%M:%S %p')|replace(' 0', ' ') }} IST · audit #{{ gate_id }}</p>
+      <div class="note"><strong>When a check fails</strong><p>The action is blocked, the reason is logged, and the case is deferred, escalated or moved to HARD_STOP. The send button is disabled.</p></div>
+    </section>
+
+    <section class="card">
+      <h2>Customer</h2>
+      <dl class="dl">
+        <dt>Plan</dt><dd>{{ c.tier }} · {{ c.amount|inr }}/month</dd>
+        <dt>Member since</dt><dd>{{ since }}</dd>
+        <dt>Payment history</dt><dd class="mono">{{ c.on_time }}{% if '/' in c.on_time %} on time{% endif %}</dd>
+        <dt>Channel</dt><dd>WhatsApp{% if c.consent_withdrawn_at %} · opt-in withdrawn{% elif c.dnd %} · on DND{% else %} · opted in{% endif %}</dd>
+        <dt>Access until</dt><dd>{{ c.access_until|dshort }}</dd>
+      </dl>
+      <form method="post" action="{{ url_for('inbound_stop', cid=c.id) }}"><button class="btn btn-outline" type="submit" {{ 'disabled' if c.status in ('RECOVERED','HARD_STOP') }}>{{ icon('phone', 16) }} Simulate: customer replies STOP</button></form>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Case history</h2><a class="link" href="{{ url_for('audit_page', q=c.id) }}">Full audit trail</a></div>
+      <ul class="hist">{% for e in history %}
+        <li><span class="mono muted sm">{{ e.id }} · {{ e.ts|dt }}</span><div><strong class="mono">{{ e.event }}</strong> <span class="muted">{{ e.actor }}</span></div><p class="sm">{{ e.detail }}</p></li>{% endfor %}
+      </ul>
+    </section>
+  </div>
+</div>
+{% endblock %}
